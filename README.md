@@ -2,9 +2,9 @@
 
 EditPilot is a CLI-first AI-assisted video editing orchestrator powered by FFmpeg.
 
-## What v0.1 is
+## What this version is
 
-Version 0.1 focuses on proving the core workflow:
+This version focuses on proving the core workflow:
 
 1. accept one or more local video inputs
 2. accept a natural-language edit request
@@ -13,9 +13,9 @@ Version 0.1 focuses on proving the core workflow:
 5. compile FFmpeg commands
 6. render or dry-run the result
 
-The goal of v0.1 is not to be a full NLE replacement. It is to establish a reliable prompt-to-plan-to-FFmpeg pipeline that can later power richer CLI and web experiences.
+The goal is not to be a full NLE replacement. It is to establish a reliable prompt-to-plan-to-FFmpeg pipeline that can later power richer CLI and web experiences.
 
-## v0.1 design
+## Design
 
 ### CLI-first approach
 
@@ -41,7 +41,7 @@ Prompt -> Plan JSON -> Validation -> FFmpeg Builder -> Runner
 
 This keeps the system inspectable and safer.
 
-### AI behavior in v0.1
+### AI behavior
 
 Prompt handling supports two paths:
 
@@ -58,7 +58,7 @@ So `--prompt` is AI-capable, but not AI-dependent.
 
 Validation is not limited to checking files exist.
 
-v0.1 uses `ffprobe` to validate:
+EditPilot uses `ffprobe` to validate:
 - input contains a video stream
 - trim ranges fit within media duration
 - concat inputs are dimension-compatible
@@ -74,9 +74,9 @@ EditPilot currently uses two render paths:
 2. **filtered concat path**
    - for trim/resize/text/speed workflows that need `filter_complex`
 
-This allows v0.1 to handle both simple and chained edit operations more correctly.
+This allows EditPilot to handle both simple and chained edit operations more correctly.
 
-## v0.1 implemented features
+## Implemented features
 
 ### CLI commands
 
@@ -120,7 +120,7 @@ EDITPILOT_AI_API_KEY
 
 Environment variables override file-based config.
 
-## v0.1 build requirements
+## Build requirements
 
 - Go
 - `ffmpeg`
@@ -140,7 +140,7 @@ Default install path:
 $HOME/.local/bin/editpilot
 ```
 
-## v0.1 example usage
+## Example usage
 
 ### Probe input media
 
@@ -236,7 +236,7 @@ make uninstall
 make clean
 ```
 
-## v0.1 limitations
+## Current limitations
 
 The current version does not yet include:
 - crop
