@@ -1,0 +1,21 @@
+{
+  "inputs": [
+    {
+      "id": "input1",
+      "path": "clip1.mp4"
+    },
+    {
+      "id": "input2",
+      "path": "clip2.mp4"
+    }
+  ],
+  "operations": [
+    {
+      "type": "concat",
+      "inputs": ["input1", "input2"]
+    }
+  ],
+  "output": {
+    "path": "output.mp4"
+  }
+}
