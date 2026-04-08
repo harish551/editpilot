@@ -2,15 +2,125 @@
 
 EditPilot is a CLI-first AI-assisted video editing orchestrator powered by FFmpeg.
 
-## Vision
+## What v0.1 is
 
-Turn natural-language editing instructions into structured edit plans and safe FFmpeg execution.
+Version 0.1 focuses on proving the core workflow:
 
-## v0 Goal
+1. accept one or more local video inputs
+2. accept a natural-language edit request
+3. convert the request into a structured edit plan
+4. validate the plan against real media
+5. compile FFmpeg commands
+6. render or dry-run the result
 
-Build a strong CLI foundation before adding any web UI.
+The goal of v0.1 is not to be a full NLE replacement. It is to establish a reliable prompt-to-plan-to-FFmpeg pipeline that can later power richer CLI and web experiences.
 
-## Requirements
+## v0.1 design
+
+### CLI-first approach
+
+EditPilot starts as a CLI instead of a web app because the hardest part is not UI — it is the editing pipeline itself:
+
+- prompt interpretation
+- edit plan generation
+- plan validation
+- FFmpeg command compilation
+- safe execution
+
+CLI-first keeps iteration fast and makes the core engine easier to test.
+
+### Planner model
+
+EditPilot does **not** execute arbitrary AI-generated shell commands.
+
+Instead it uses this pipeline:
+
+```text
+Prompt -> Plan JSON -> Validation -> FFmpeg Builder -> Runner
+```
+
+This keeps the system inspectable and safer.
+
+### AI behavior in v0.1
+
+Prompt handling supports two paths:
+
+1. **AI planner path**
+   - uses configured provider/model/API key
+   - currently supports an OpenAI-style planning flow
+2. **heuristic fallback path**
+   - used when AI is not configured or AI planning fails
+   - keeps the CLI usable without external model access
+
+So `--prompt` is AI-capable, but not AI-dependent.
+
+### Media-aware validation
+
+Validation is not limited to checking files exist.
+
+v0.1 uses `ffprobe` to validate:
+- input contains a video stream
+- trim ranges fit within media duration
+- concat inputs are dimension-compatible
+- output path does not overwrite an input
+- operation parameters are structurally valid
+
+### Render strategy
+
+EditPilot currently uses two render paths:
+
+1. **simple concat path**
+   - for direct concat with no transforms
+2. **filtered concat path**
+   - for trim/resize/text/speed workflows that need `filter_complex`
+
+This allows v0.1 to handle both simple and chained edit operations more correctly.
+
+## v0.1 implemented features
+
+### CLI commands
+
+- `editpilot probe`
+- `editpilot plan`
+- `editpilot validate`
+- `editpilot render`
+- `editpilot run`
+- `editpilot config show`
+- `editpilot config init`
+- `editpilot config set provider <provider>`
+- `editpilot config set model <model>`
+- `editpilot config set api-key <key>`
+
+### Supported edit operations
+
+- `trim`
+- `resize`
+- `concat`
+- `mute`
+- `text_overlay`
+- `speed`
+
+### Config support
+
+Config can be managed through CLI and/or environment variables.
+
+Default config file:
+
+```bash
+$HOME/.config/editpilot/config.env
+```
+
+Supported settings:
+
+```bash
+EDITPILOT_AI_PROVIDER
+EDITPILOT_AI_MODEL
+EDITPILOT_AI_API_KEY
+```
+
+Environment variables override file-based config.
+
+## v0.1 build requirements
 
 - Go
 - `ffmpeg`
@@ -24,91 +134,15 @@ make test
 make install
 ```
 
-By default, install places the binary at:
+Default install path:
 
 ```bash
 $HOME/.local/bin/editpilot
 ```
 
-If needed, add that to your PATH:
+## v0.1 example usage
 
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-## Commands
-
-- `editpilot probe`
-- `editpilot plan`
-- `editpilot validate`
-- `editpilot render`
-- `editpilot run`
-- `editpilot config show`
-- `editpilot config init`
-- `editpilot config set model <model>`
-- `editpilot config set provider <provider>`
-- `editpilot config set api-key <key>`
-
-## Implemented operations
-
-- `trim`
-- `resize`
-- `concat`
-- `mute`
-- `text_overlay`
-- `speed`
-
-## AI Config
-
-You can manage model settings through CLI now.
-
-### Initialize config
-
-```bash
-editpilot config init
-```
-
-### Show current config
-
-```bash
-editpilot config show
-```
-
-### Set provider
-
-```bash
-editpilot config set provider openai
-```
-
-### Set model
-
-```bash
-editpilot config set model gpt-5.1-codex
-```
-
-### Set API key
-
-```bash
-editpilot config set api-key YOUR_KEY_HERE
-```
-
-Default config file:
-
-```bash
-$HOME/.config/editpilot/config.env
-```
-
-Environment variables still work and override file values:
-
-```bash
-EDITPILOT_AI_PROVIDER
-EDITPILOT_AI_MODEL
-EDITPILOT_AI_API_KEY
-```
-
-## Example usages
-
-### Probe a video
+### Probe input media
 
 ```bash
 editpilot probe --input clip.mp4
@@ -123,13 +157,13 @@ editpilot plan \
   --output out.mp4
 ```
 
-### Validate an existing plan
+### Validate a saved plan
 
 ```bash
 editpilot validate --plan examples/sample-plan.json
 ```
 
-### Render from a saved plan
+### Render from an existing plan
 
 ```bash
 editpilot render \
@@ -137,7 +171,7 @@ editpilot render \
   --save-command command.sh
 ```
 
-### Dry-run a prompt without rendering
+### Dry-run without rendering
 
 ```bash
 editpilot run \
@@ -158,7 +192,7 @@ editpilot run \
   --output final.mp4
 ```
 
-### Merge two clips into a vertical reel
+### Merge clips into a vertical reel
 
 ```bash
 editpilot run \
@@ -168,7 +202,7 @@ editpilot run \
   --output reel.mp4
 ```
 
-### Speed up and mute audio
+### Speed up and mute a clip
 
 ```bash
 editpilot run \
@@ -177,11 +211,17 @@ editpilot run \
   --output fast.mp4
 ```
 
-## Helpful flags
+## Testing
 
-- `--dry-run`
-- `--save-plan plan.json`
-- `--save-command command.sh`
+```bash
+make test
+```
+
+Current test coverage includes:
+- planner tests
+- validator tests
+- FFmpeg builder tests
+- end-to-end CLI dry-run test with generated fixture media
 
 ## Make targets
 
@@ -196,19 +236,12 @@ make uninstall
 make clean
 ```
 
-## What is hardened now
+## v0.1 limitations
 
-- config-driven AI integration path
-- heuristic fallback planner
-- ffprobe-aware validation
-- concat compatibility checks
-- fixture-based end-to-end CLI test
-- command/plan export support
-- CLI config management for model/provider/API key
+The current version does not yet include:
+- crop
+- subtitles
+- background music
+- timeline editing model
+- advanced multi-clip semantic targeting
 
-## Notes
-
-- planner supports heuristic prompt parsing today
-- AI provider path is config-driven and implemented for OpenAI-style chat planning
-- media-aware validation is built in through ffprobe
-- next big expansion area would be crop / bg music / subtitles / timeline model
